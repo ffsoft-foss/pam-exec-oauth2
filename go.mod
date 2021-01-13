@@ -1,7 +1,5 @@
 module github.com/shimt/pam-exec-oauth2
 
-replace golang.org/x/oauth2 => ./vendor/golang.org/x/oauth2
-
 require (
 	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/shimt/go-simplecli v0.0.4

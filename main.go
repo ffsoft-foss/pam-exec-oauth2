@@ -24,9 +24,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/shimt/go-simplecli"
 	"golang.org/x/oauth2"
@@ -67,15 +67,17 @@ func main() {
 	cli.Exit1IfError(err)
 
 	if cli.ConfigFile != "" {
-		fmt.Println("Using config file:", cli.ConfigFile)
+		cli.Log.Debugf("Using config file: %s", cli.ConfigFile)
 	}
 
 	username := os.Getenv("PAM_USER")
 	password := ""
 
-	stdinScanner := bufio.NewScanner(os.Stdin)
-	if stdinScanner.Scan() {
-		password = stdinScanner.Text()
+	s := bufio.NewScanner(os.Stdin)
+	if s.Scan() {
+		// Clean new lines and null terminator from string
+		r := strings.NewReplacer("\t", "", "\n", "", "\r", "", "\x00", "")
+		password = r.Replace(s.Text())
 	}
 
 	cli.Log.Debug("create oauth2Config")
@@ -95,23 +97,16 @@ func main() {
 		},
 	}
 
-	extraParameters := url.Values{}
-
-	for k, v := range cli.Config.GetStringMapString("extra-parameters") {
-		extraParameters[k] = []string{v}
-	}
-
 	cli.Log.Debug("create oauth2Context")
 
 	oauth2Context := context.Background()
 
 	cli.Log.Debug("call PasswordCredentialsToken")
 
-	oauth2Token, err := oauth2Config.PasswordCredentialsTokenEx(
+	oauth2Token, err := oauth2Config.PasswordCredentialsToken(
 		oauth2Context,
 		fmt.Sprintf(cli.Config.GetString("username-format"), username),
 		password,
-		extraParameters,
 	)
 
 	cli.Exit1IfError(err)
